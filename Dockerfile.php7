@@ -1,0 +1,37 @@
+FROM php:7-apache
+
+# Change apache permissions
+RUN a2enmod rewrite
+
+# Add new apt-get package source for php7.
+# Install curl and other utils to facilitate install of composer
+RUN apt-get update \
+  && echo 'deb http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list \
+  && echo 'deb-src http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list \
+  && apt-get install -y curl \
+  && curl -sS https://www.dotdeb.org/dotdeb.gpg -o dotdeb.gpg\
+  && apt-key add dotdeb.gpg \
+  && apt-get update \
+  && apt-get install -y php7.0-mysql \
+  && docker-php-ext-install pdo_mysql \
+  && apt-get -y install git openssl unzip mysql-client \
+  && apt-get clean
+
+# Copy contents of project root to apaches default folder
+ADD . /var/www/html
+
+# Download Composer; save as composer-setup.php
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php
+
+# Switch to container directory and run file to verify Composer download
+RUN /var/www/html/check_composer_download.sh
+
+# Install composer
+RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+
+# Run composer to install project dependencies
+RUN composer install
+
+# Start apache
+RUN echo  "$(echo '. /var/www/html/.env' | cat - /etc/apache2/envvars)" > /etc/apache2/envvars
+CMD exec /usr/sbin/apachectl -D FOREGROUND

@@ -1,0 +1,16 @@
+httpd:
+  build: .
+  dockerfile: Dockerfile.php7
+  ports:
+    - "80:80"
+  links:
+    - mysql
+  environment:
+    TERM: xterm
+
+mysql:
+  image: mysql
+  ports:
+    - "3306:3306"
+  environment:
+    MYSQL_ROOT_PASSWORD: verysecret
